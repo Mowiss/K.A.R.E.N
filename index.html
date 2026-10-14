@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K.A.R.E.N - Simulateur CNV</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap');
+        
+        :root {
+            --shadow-color: #0f172a;
+        }
+        .dark {
+            --shadow-color: #000000;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #fce7f3; /* pink-100 */
+            background-image: radial-gradient(#f9a8d4 2px, transparent 2px);
+            background-size: 30px 30px;
+            color: #1e293b;
+            transition: all 0.3s ease;
+        }
+        
+        body.dark {
+            background-color: #1e293b; /* slate-800 */
+            background-image: radial-gradient(#334155 2px, transparent 2px);
+            color: #f8fafc;
+        }
+
+        .font-fredoka { font-family: 'Fredoka', sans-serif; }
+
+        /* Style Jeu / Neo-Brutalisme */
+        .game-card {
+            background: #ffffff;
+            border: 4px solid #0f172a;
+            border-radius: 24px;
+            box-shadow: 8px 8px 0px var(--shadow-color);
+            transition: all 0.3s ease;
+        }
+        .dark .game-card {
+            background: #0f172a;
+            border-color: #334155;
+            box-shadow: 8px 8px 0px #000;
+        }
+        
+        .game-panel {
+            background: #ffffff;
+            border: 4px solid #0f172a;
+            border-radius: 16px;
+            box-shadow: 4px 4px 0px var(--shadow-color);
+            transition: all 0.3s ease;
+        }
+        .dark .game-panel {
+            background: #1e293b;
+            border-color: #475569;
+        }
+
+        /* Boutons animés */
+        .btn-game {
+            border: 4px solid #0f172a;
+            border-radius: 16px;
+            box-shadow: 0 6px 0px var(--shadow-color);
+            transition: all 0.1s;
+            font-family: 'Fredoka', sans-serif;
+            font-weight: 600;
+        }
+        .dark .btn-game {
+            border-color: #000;
+        }
+        .btn-game:active {
+            transform: translateY(6px);
+            box-shadow: 0 0px 0px var(--shadow-color);
+        }
+        
+        .btn-primary { background-color: #3b82f6; color: white; }
+        .btn-success { background-color: #22c55e; color: white; }
+        .btn-danger { background-color: #ef4444; color: white; }
+        .btn-warning { background-color: #eab308; color: #0f172a; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.5);
+            border-left: 3px solid #0f172a;
+        }
+        .dark ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.3);
+            border-color: #334155;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border: 3px solid #0f172a;
+            border-radius: 10px;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-color: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Range Slider Stylé Jeu */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+            height: 24px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 36px;
+            width: 36px;
+            border-radius: 50%;
+            background: #fff;
+            border: 4px solid #0f172a;
+            cursor: pointer;
+            margin-top: -10px;
+            box-shadow: 0 4px 0px var(--shadow-color);
+            transition: transform 0.1s;
+        }
+        input[type=range]::-webkit-slider-thumb:active {
+            transform: scale(0.9);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 16px;
+            cursor: pointer;
+            background: #e2e8f0;
+            border: 3px solid #0f172a;
+            border-radius: 8px;
+        }
+
+        /* Context Radio Buttons */
+        .context-radio:checked + label {
+            background-color: #fde047;
+            transform: scale(1.05) translateY(-4px);
+            box-shadow: 0 6px 0px var(--shadow-color);
+            border-color: #0f172a;
+        }
+        .dark .context-radio:checked + label {
+            background-color: #ca8a04;
+            color: #fff;
+        }
+
+        /* Chat bubbles */
+        .chat-bubble {
+            max-width: 85%;
+            border: 3px solid #0f172a;
+            border-radius: 20px;
+            position: relative;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .chat-bubble-user {
+            background-color: #bfdbfe;
+            border-bottom-right-radius: 4px;
+            box-shadow: 4px 4px 0px rgba(15, 23, 42, 0.3);
+        }
+        .dark .chat-bubble-user {
+            background-color: #1d4ed8;
+            color: white;
+            border-color: #000;
+        }
+        .chat-bubble-agent {
+            background-color: #ffffff;
+            border-bottom-left-radius: 4px;
+            box-shadow: -4px 4px 0px rgba(15, 23, 42, 0.3);
+        }
+        .dark .chat-bubble-agent {
+            background-color: #334155;
+            color: #f1f5f9;
+            border-color: #000;
+        }
+        .osbd-badge {
+            font-family: 'Fredoka', monospace;
+            background: #fef08a;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            margin-bottom: 8px;
+            display: inline-block;
+            color: #0f172a;
+            border: 2px solid #0f172a;
+            box-shadow: 2px 2px 0px rgba(0,0,0,0.2);
+        }
+
+        /* Animations */
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.8) translateY(10px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        .animate-float { animation: float 3s ease-in-out infinite; }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-3px) rotate(-3deg); }
+            75% { transform: translateX(3px) rotate(3deg); }
+        }
+        .animate-shake { animation: shake 0.4s infinite; }
+
+        /* Typist effect for thinking */
+        .typing-indicator span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background-color: #0f172a;
+            border-radius: 50%;
+            margin: 0 2px;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col items-center justify-center p-4 sm:p-8">
+
+    <!-- Settings Modal (API Key) -->
+    <div id="settings-modal" class="hidden fixed inset-0 bg-slate-900 bg-opacity-70 z-50 flex items-center justify-center backdrop-blur-sm">
+        <div class="game-panel p-6 w-full max-w-md mx-4 dark:text-white">
+            <h3 class="text-2xl font-fredoka mb-4 flex items-center justify-between gap-2 text-slate-800 dark:text-white">
+                <span class="flex items-center gap-2">⚙️ Paramètres</span>
+                <button onclick="toggleTheme()" class="text-3xl hover:scale-110 transition-transform bg-slate-100 dark:bg-slate-700 p-2 rounded-full border-2 border-slate-800 dark:border-slate-400" id="theme-btn" title="Changer le thème">🌙</button>
+            </h3>
+            <div class="mb-6">
+                <label class="block text-sm text-slate-600 dark:text-slate-300 font-bold mb-2">Clé API Google Gemini</label>
+                <input type="password" id="api-key-input" placeholder="Laisse vide pour jouer via l'app" class="w-full p-3 border-4 border-slate-800 dark:border-slate-500 rounded-xl focus:ring-0 focus:border-blue-500 outline-none font-bold shadow-[4px_4px_0px_#1e293b] dark:shadow-[4px_4px_0px_#000] dark:bg-slate-800 dark:text-white transition-colors">
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-3 font-bold">
+                    Où trouver cette clé ? <br>
+                    <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-blue-500 hover:text-blue-600 underline">Obtiens ta clé API gratuite sur Google AI Studio</a>.
+                </p>
+            </div>
+            <div class="flex justify-end">
+                <button onclick="toggleSettings(false)" class="btn-game btn-primary px-6 py-3 text-lg">Sauvegarder & Fermer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="w-full max-w-4xl h-full max-h-[900px] flex flex-col relative game-card overflow-hidden">
+        
+        <!-- Header -->
+        <header class="bg-white dark:bg-slate-800 border-b-4 border-slate-800 dark:border-slate-500 p-4 flex justify-between items-center z-10 shrink-0 transition-colors">
+            <div class="flex items-center gap-4">
+                <div id="header-avatar" class="w-16 h-16 bg-red-500 border-2 border-slate-800 dark:border-slate-900 rounded-xl flex items-center justify-center text-white text-4xl shadow-[2px_2px_0px_#1e293b] dark:shadow-[2px_2px_0px_#000] animate-shake transition-colors">
+                    🤬
+                </div>
+                <div>
+                    <h1 class="font-fredoka text-3xl text-slate-800 dark:text-white leading-tight">K.A.R.E.N</h1>
+                    <p class="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 font-extrabold tracking-widest uppercase">Kit d'Aide à la Réponse Empathique et Nuancée</p>
+                </div>
+            </div>
+            <button onclick="toggleSettings(true)" class="p-3 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 border-2 border-slate-800 dark:border-slate-500 rounded-xl transition-colors shadow-[2px_2px_0px_#1e293b] dark:shadow-[2px_2px_0px_#000] hover:translate-y-0.5 hover:shadow-[1px_1px_0px_#1e293b] dark:hover:shadow-[1px_1px_0px_#000]" title="Paramètres">
+                <svg class="w-6 h-6 text-slate-800 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            </button>
+        </header>
+
+        <!-- VIEW: CONFIGURATION -->
+        <main id="view-config" class="flex-1 overflow-y-auto p-6 flex flex-col gap-6 bg-slate-50 dark:bg-slate-900 relative transition-colors">
+            <!-- Arrière plan motifs décoratifs -->
+            <div class="absolute inset-0 opacity-10 pointer-events-none flex flex-wrap justify-around items-center overflow-hidden text-6xl">
+                <span>⚔️</span><span>🥊</span><span>💢</span><span>🛡️</span><span>💪</span>
+            </div>
+
+            <div class="text-center max-w-2xl mx-auto mt-2 relative z-10">
+                <h2 class="text-3xl font-fredoka text-slate-800 dark:text-white mb-2">Prêt pour l'arène ? 🥊</h2>
+                <p class="text-slate-600 dark:text-slate-400 font-bold">
+                    Configure l'humeur de <strong>K.A.R.E.N</strong> ci-dessous. Ton but : désamorcer la bombe avec la méthode <strong>O.S.B.D</strong> !
+                </p>
+            </div>
+            
+            <!-- Big Avatar Display -->
+            <div class="flex justify-center relative z-10 my-2">
+                <div id="big-avatar-container" class="w-32 h-32 md:w-40 md:h-40 bg-yellow-400 rounded-full border-8 border-slate-800 dark:border-slate-700 flex items-center justify-center text-7xl md:text-8xl shadow-[4px_4px_0px_#0f172a] dark:shadow-[4px_4px_0px_#000] animate-float transition-all">
+                    😬
+                </div>
+            </div>
+
+            <!-- Mood Scale -->
+            <section class="game-panel p-6 relative z-10">
+                <div class="absolute -top-4 -left-4 w-10 h-10 bg-red-500 rounded-full border-4 border-slate-800 dark:border-slate-900 flex items-center justify-center font-fredoka text-white text-xl shadow-[2px_2px_0px_#0f172a] dark:shadow-[2px_2px_0px_#000]">1</div>
+                <h3 class="font-fredoka text-xl text-slate-800 dark:text-white mb-6 text-center">Niveau de Rage 🔥</h3>
+                <div class="flex flex-col gap-4">
+                    <input type="range" id="mood-slider" min="1" max="10" value="5" class="w-full" oninput="updateMoodDisplay()">
+                    <div class="flex justify-between text-2xl md:text-3xl px-2 mt-2">
+                        <span class="opacity-50 transition-all transform hover:scale-110" id="emo-1" title="Amical">🥰</span>
+                        <span class="opacity-50 transition-all transform hover:scale-110" id="emo-2" title="Neutre">😐</span>
+                        <span class="opacity-50 transition-all transform hover:scale-110" id="emo-3" title="Lassé">😒</span>
+                        <span class="opacity-50 transition-all transform hover:scale-110" id="emo-4" title="Agacé">🙄</span>
+                        <span class="opacity-50 transition-all transform hover:scale-110" id="emo-5" title="Tendu">😬</span>
+                        <span class="opacity-50 transition-all transform hover:scale-110" id="emo-6" title="Frustré">😤</span>
+                        <span class="opacity-50 transition-all transform hover:scale-110" id="emo-7" title="En colère">😠</span>
+                        <span class="opacity-50 transition-all transform hover:scale-110" id="emo-8" title="Furieux">😡</span>
+                        <span class="opacity-50 transition-all transform hover:scale-110" id="emo-9" title="Rageux">🤬</span>
+                        <span class="opacity-50 transition-all transform hover:scale-110" id="emo-10" title="Hostile">👿</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Context Scale -->
+            <section class="game-panel p-6 relative z-10">
+                <div class="absolute -top-4 -left-4 w-10 h-10 bg-blue-500 rounded-full border-4 border-slate-800 dark:border-slate-900 flex items-center justify-center font-fredoka text-white text-xl shadow-[2px_2px_0px_#0f172a] dark:shadow-[2px_2px_0px_#000]">2</div>
+                <h3 class="font-fredoka text-xl text-slate-800 dark:text-white mb-6 text-center">Choisis l'Arène 🗺️</h3>
+                <div class="grid grid-cols-2 sm:grid-cols-5 gap-4" id="context-grid">
+                    <!-- Radios generated by JS for cleaner HTML -->
+                </div>
+            </section>
+
+            <!-- Custom Scenario -->
+            <section class="game-panel p-6 relative z-10 mb-4">
+                <div class="absolute -top-4 -left-4 w-10 h-10 bg-purple-500 rounded-full border-4 border-slate-800 dark:border-slate-900 flex items-center justify-center font-fredoka text-white text-xl shadow-[2px_2px_0px_#0f172a] dark:shadow-[2px_2px_0px_#000]">3</div>
+                <h3 class="font-fredoka text-xl text-slate-800 dark:text-white mb-2 text-center">Lore Personnalisé (Optionnel) ✍️</h3>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mb-4 text-center font-bold">Invente une situation précise ou donne un nom à ton adversaire.</p>
+                <textarea id="custom-scenario" rows="3" placeholder="Ex: Mon voisin Michel a encore garé sa Twingo devant mon garage..." class="w-full p-4 border-4 border-slate-200 dark:border-slate-600 rounded-xl focus:ring-0 focus:border-purple-500 outline-none resize-none bg-slate-50 dark:bg-slate-800 dark:text-white font-semibold transition-colors"></textarea>
+            </section>
+
+            <button onclick="initSimulation()" class="btn-game btn-success w-full py-5 text-2xl flex items-center justify-center gap-3 relative z-10 mt-2">
+                FIGHT ! Lancer la partie
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            </button>
+        </main>
+
+        <!-- VIEW: CHAT SIMULATOR -->
+        <main id="view-chat" class="hidden flex-1 flex flex-col bg-slate-50 dark:bg-slate-900 overflow-hidden relative transition-colors">
+            <!-- Recap Banner (VS Theme) -->
+            <div class="bg-slate-800 dark:bg-slate-950 text-white px-4 py-3 text-sm flex flex-col sm:flex-row justify-between items-center shrink-0 gap-3 border-b-4 border-slate-900 dark:border-black shadow-md z-10 transition-colors">
+                <div class="flex items-center gap-2 font-fredoka text-lg">
+                    <span id="banner-context-icon" class="text-2xl"></span>
+                    <span id="banner-context-text" class="text-yellow-400"></span>
+                    <span class="mx-2 text-slate-500">⚔️</span>
+                    <span>RAGE : <span id="banner-mood-text" class="text-red-400 font-bold text-xl"></span>/10</span>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="requestHelp()" class="btn-game btn-warning px-4 py-2 text-sm flex items-center gap-2">
+                        💡 JOKER (/HELP)
+                    </button>
+                    <button onclick="stopSimulation()" class="btn-game btn-danger px-4 py-2 text-sm flex items-center gap-2">
+                        🛑 ABANDON (/STOP)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Chat Messages -->
+            <div id="chat-messages" class="flex-1 overflow-y-auto p-4 sm:p-6 flex flex-col gap-6 relative z-0 bg-[url('https://www.transparenttextures.com/patterns/comic-bg.png')] bg-opacity-20 dark:bg-opacity-5">
+                <!-- Messages will be injected here -->
+            </div>
+
+            <!-- Loading Indicator (Hidden) -->
+            <div id="chat-loading" class="hidden px-6 py-2 shrink-0 bg-white dark:bg-slate-800 border-t-2 border-slate-200 dark:border-slate-700 transition-colors">
+                <div class="bg-slate-100 dark:bg-slate-700 border-2 border-slate-300 dark:border-slate-600 rounded-full py-2 px-4 inline-block shadow-sm">
+                    <div class="typing-indicator flex items-center h-4">
+                        <span class="dark:bg-white"></span><span class="dark:bg-white"></span><span class="dark:bg-white"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Input -->
+            <div class="p-4 bg-white dark:bg-slate-800 border-t-4 border-slate-800 dark:border-slate-600 shrink-0 z-10 transition-colors">
+                <form id="chat-form" class="flex gap-3" onsubmit="handleChatSubmit(event)">
+                    <input type="text" id="chat-input" placeholder="Ta parade pacifique (OSBD)..." class="flex-1 p-4 border-4 border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-white rounded-2xl focus:border-blue-500 outline-none font-bold text-slate-700 text-lg transition-colors" autocomplete="off" required>
+                    <button type="submit" class="btn-game btn-primary p-4 rounded-2xl flex items-center justify-center">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                    </button>
+                </form>
+            </div>
+        </main>
+
+        <!-- VIEW: REPORT -->
+        <main id="view-report" class="hidden flex-1 overflow-y-auto p-6 bg-slate-800 dark:bg-slate-950 text-white transition-colors">
+            <div class="max-w-3xl mx-auto py-8">
+                <div class="text-center mb-10">
+                    <h2 class="text-6xl font-fredoka text-yellow-400 mb-2 drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)]">NIVEAU TERMINÉ</h2>
+                    <p class="text-slate-300 font-bold text-xl">Voici le bilan de ton affrontement verbal avec K.A.R.E.N.</p>
+                </div>
+
+                <div id="report-content" class="game-panel p-8 text-slate-800 dark:text-slate-200 prose prose-lg prose-blue dark:prose-invert max-w-none shadow-[8px_8px_0px_#000000]">
+                    <!-- Report will be injected here -->
+                    <div class="animate-pulse flex flex-col gap-4">
+                        <div class="h-6 bg-slate-200 rounded-lg w-3/4"></div>
+                        <div class="h-4 bg-slate-200 rounded w-full"></div>
+                        <div class="h-4 bg-slate-200 rounded w-5/6"></div>
+                        <div class="h-40 bg-slate-100 border-4 border-slate-200 rounded-2xl mt-6"></div>
+                    </div>
+                </div>
+
+                <div class="mt-12 text-center">
+                    <button onclick="resetApp()" class="btn-game btn-primary px-8 py-4 text-2xl flex items-center gap-3 mx-auto">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        REJOUER
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Data & State
+        const CONTEXTS = [
+            { id: 1, icon: '🍻', label: 'Social' },
+            { id: 2, icon: '🏠', label: 'Voisinage' },
+            { id: 3, icon: '☕', label: 'Collègues' },
+            { id: 4, icon: '👔', label: 'Hiérarchie' },
+            { id: 5, icon: '🛎️', label: 'Client' },
+            { id: 6, icon: '🏘️', label: 'Domestique' },
+            { id: 7, icon: '🚶', label: 'Espace Public' },
+            { id: 8, icon: '👨‍👩‍👧‍👦', label: 'Familial' },
+            { id: 9, icon: '🏫', label: 'Éducatif' },
+            { id: 10, icon: '🗂️', label: 'Administratif' },
+        ];
+
+        let state = {
+            mood: 5,
+            contextId: 3, // Default Colleagues
+            customContext: '',
+            chatHistory: [],
+            isProcessing: false,
+            simulationActive: false
+        };
+
+        // System instructions to enforce the Persona and NVC rules
+        const SYSTEM_PROMPT = `Tu es un formateur expert en Communication Non Violente (CNV) et un acteur de jeu de rôle spécialisé dans la gestion de conflits. 
+Ton but est d'entraîner l'utilisateur à pratiquer la méthode OSBD (Observation, Sentiment, Besoin, Demande) en simulant un interlocuteur difficile.
+
+RÈGLES DE LA SIMULATION :
+1. Reste TOUJOURS dans le personnage que l'utilisateur a configuré, en respectant son niveau d'humeur. Ne dis jamais que tu es une IA.
+2. IMPORTANT : À chaque réponse de l'utilisateur, tu DOIS analyser brièvement si sa réponse respecte la méthode OSBD sur une seule ligne tout en haut de ton message avec ce format exact :
+[OSBD] O:🟢(ou🔴/🟠) S:🟢 B:🟢 D:🟢
+(🟢=Réussi, 🟠=Moyen, 🔴=Raté/Absent. Mets une courte note entre parenthèses si besoin).
+3. Juste en dessous de cette ligne, saute une ligne et réponds en incarnant le personnage, pour continuer la dispute/discussion. Tes réponses de personnage doivent être concises (1 ou 2 paragraphes max) pour permettre l'échange.
+4. Si l'utilisateur demande /HELP, sors temporairement du personnage pour lui donner la phrase parfaite à dire selon la méthode OSBD.
+5. Si l'utilisateur demande /STOP, arrête le jeu et rédige le "Rapport d'échange OSBD".`;
+
+        // Initialization
+        window.onload = () => {
+            renderContexts();
+            updateMoodDisplay();
+            
+            // Check system preference for dark mode
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                document.body.classList.add('dark');
+                document.getElementById('theme-btn').textContent = '☀️';
+            }
+        };
+
+        function toggleTheme() {
+            document.body.classList.toggle('dark');
+            const btn = document.getElementById('theme-btn');
+            if (document.body.classList.contains('dark')) {
+                btn.textContent = '☀️';
+            } else {
+                btn.textContent = '🌙';
+            }
+        }
+
+        function toggleSettings(show) {
+            const modal = document.getElementById('settings-modal');
+            if(show) {
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+
+        function renderContexts() {
+            const grid = document.getElementById('context-grid');
+            grid.innerHTML = CONTEXTS.map(ctx => `
+                <div class="relative h-full">
+                    <input type="radio" name="context" id="ctx-${ctx.id}" value="${ctx.id}" ${ctx.id === state.contextId ? 'checked' : ''} class="context-radio hidden" onchange="state.contextId = ${ctx.id}">
+                    <label for="ctx-${ctx.id}" class="flex flex-col items-center justify-center p-4 bg-white dark:bg-slate-700 border-4 border-slate-800 dark:border-slate-500 rounded-xl cursor-pointer transition-all text-center h-full shadow-[4px_4px_0px_#0f172a] dark:shadow-[4px_4px_0px_#000] hover:-translate-y-1 hover:shadow-[6px_6px_0px_#0f172a] dark:hover:shadow-[6px_6px_0px_#000]">
+                        <span class="text-3xl mb-2">${ctx.icon}</span>
+                        <span class="text-sm font-fredoka text-slate-800 dark:text-white">${ctx.label}</span>
+                    </label>
+                </div>
+            `).join('');
+        }
+
+        function updateMoodDisplay() {
+            const slider = document.getElementById('mood-slider');
+            state.mood = slider.value;
+            
+            // Adjust slider track color dynamically based on value
+            const percentage = (slider.value - 1) / 9 * 100;
+            let color = '#ef4444'; // default red
+            let bgColor = 'bg-red-500';
+            if(slider.value < 4) { color = '#22c55e'; bgColor = 'bg-green-500'; }
+            else if(slider.value < 7) { color = '#eab308'; bgColor = 'bg-yellow-400'; }
+
+            slider.style.background = `linear-gradient(to right, ${color} ${percentage}%, #e2e8f0 ${percentage}%)`;
+            
+            const currentEmoji = document.getElementById(`emo-${state.mood}`).textContent;
+
+            // Update Big Avatar
+            const bigAvatar = document.getElementById('big-avatar-container');
+            if (bigAvatar) {
+                bigAvatar.textContent = currentEmoji;
+                bigAvatar.className = `w-32 h-32 md:w-40 md:h-40 rounded-full border-8 border-slate-800 dark:border-slate-700 flex items-center justify-center text-7xl md:text-8xl shadow-[4px_4px_0px_#0f172a] dark:shadow-[4px_4px_0px_#000] transition-all ${bgColor}`;
+                if(state.mood > 7) bigAvatar.classList.add('animate-shake');
+                else bigAvatar.classList.add('animate-float');
+            }
+
+            // Update Header Avatar
+            const headerAvatar = document.getElementById('header-avatar');
+            if (headerAvatar) {
+                headerAvatar.textContent = currentEmoji;
+                headerAvatar.className = `w-16 h-16 border-2 border-slate-800 dark:border-slate-900 rounded-xl flex items-center justify-center text-white text-4xl shadow-[2px_2px_0px_#1e293b] dark:shadow-[2px_2px_0px_#000] transition-colors ${bgColor}`;
+                if(state.mood > 7) headerAvatar.classList.add('animate-shake');
+                else headerAvatar.classList.add('animate-float');
+            }
+
+            // Update emojis opacity, scale and animation
+            for(let i=1; i<=10; i++) {
+                const emo = document.getElementById(`emo-${i}`);
+                if(i == state.mood) {
+                    emo.classList.remove('opacity-50');
+                    emo.classList.add('opacity-100', 'scale-125');
+                    if(i > 7) emo.classList.add('animate-shake');
+                    else emo.classList.add('animate-float');
+                } else {
+                    emo.classList.add('opacity-50');
+                    emo.classList.remove('opacity-100', 'scale-125', 'animate-shake', 'animate-float');
+                }
+            }
+        }
+
+        function switchView(viewId) {
+            ['view-config', 'view-chat', 'view-report'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            document.getElementById(viewId).classList.remove('hidden');
+        }
+
+        async function callGeminiAPI(history, systemInstruct = null) {
+            // Retrieve optional API key. If empty, the Canvas environment proxies it.
+            const apiKey = document.getElementById('api-key-input').value.trim();
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+            
+            let payload = {
+                contents: history,
+                generationConfig: {
+                    temperature: 0.7
+                }
+            };
+
+            if (systemInstruct) {
+                payload.systemInstruction = {
+                    parts: [{ text: systemInstruct }]
+                };
+            }
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const result = await response.json();
+                
+                if(result.error) {
+                    throw new Error(result.error.message || "Erreur API Gemini");
+                }
+
+                if (result.candidates && result.candidates.length > 0) {
+                    return result.candidates[0].content.parts[0].text;
+                } else {
+                    throw new Error("Format de réponse inattendu.");
+                }
+            } catch (error) {
+                console.error("API Error:", error);
+                return `[Erreur technique: ${error.message}]. Réessaie ou vérifie ta clé API si tu en as fourni une.`;
+            }
+        }
+
+        async function initSimulation() {
+            state.customContext = document.getElementById('custom-scenario').value.trim();
+            const ctxObj = CONTEXTS.find(c => c.id == state.contextId);
+            
+            // Setup Banner
+            document.getElementById('banner-context-icon').textContent = ctxObj.icon;
+            document.getElementById('banner-context-text').textContent = ctxObj.label;
+            document.getElementById('banner-mood-text').textContent = state.mood;
+
+            // Clear Chat
+            document.getElementById('chat-messages').innerHTML = '';
+            state.chatHistory = [];
+            
+            switchView('view-chat');
+            setLoading(true);
+            state.simulationActive = true;
+
+            const setupPrompt = `INITIALISATION DE LA SIMULATION :
+Contexte choisi : ${ctxObj.label}
+Humeur du personnage (1 à 10) : ${state.mood} (10 = Très hostile)
+Détails personnalisés : ${state.customContext ? state.customContext : "Aucun. Invente une situation crédible."}
+
+Action requise : Plante le décor de la situation en 1 ou 2 phrases descriptives (entre *astérisques*), puis lance IMMÉDIATEMENT la première réplique très directe de ton personnage en fonction de l'humeur.
+NE FAIS PAS d'analyse OSBD pour ce premier message.`;
+
+            // Prepare history
+            state.chatHistory.push({
+                role: "user",
+                parts: [{ text: setupPrompt }]
+            });
+
+            const responseText = await callGeminiAPI(state.chatHistory, SYSTEM_PROMPT);
+            
+            state.chatHistory.push({
+                role: "model",
+                parts: [{ text: responseText }]
+            });
+
+            renderMessage(responseText, 'agent');
+            setLoading(false);
+            
+            // Welcome local message
+            appendSystemAlert("Bienvenue dans la simulation ! Ton but : calmer la situation en utilisant O.S.B.D. (Observation, Sentiment, Besoin, Demande).");
+        }
+
+        async function handleChatSubmit(e) {
+            e.preventDefault();
+            if(!state.simulationActive || state.isProcessing) return;
+
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if(!text) return;
+
+            input.value = '';
+
+            // Handle commands
+            if (text.toUpperCase() === '/STOP') {
+                stopSimulation();
+                return;
+            }
+            if (text.toUpperCase() === '/HELP') {
+                requestHelp();
+                return;
+            }
+
+            // Normal message
+            renderMessage(text, 'user');
+            
+            state.chatHistory.push({
+                role: "user",
+                parts: [{ text: text }]
+            });
+
+            setLoading(true);
+            const responseText = await callGeminiAPI(state.chatHistory, SYSTEM_PROMPT);
+            
+            state.chatHistory.push({
+                role: "model",
+                parts: [{ text: responseText }]
+            });
+
+            renderMessage(responseText, 'agent');
+            setLoading(false);
+            scrollToBottom();
+        }
+
+        async function requestHelp() {
+            if(state.isProcessing) return;
+            
+            appendSystemAlert("Le formateur analyse la situation pour te proposer une phrase parfaite...");
+            setLoading(true);
+
+            // Create a temporary prompt based on history, not added to permanent history
+            let tempHistory = [...state.chatHistory];
+            tempHistory.push({
+                role: "user",
+                parts: [{ text: "COMMANDE /HELP : Sors temporairement de ton personnage. Propose-moi LA MEILLEURE réponse stricte selon la méthode OSBD que je devrais dire maintenant face à ta dernière réplique. Détaille les 4 lettres. Ne me juge pas, aide-moi juste." }]
+            });
+
+            const helpText = await callGeminiAPI(tempHistory, SYSTEM_PROMPT);
+            
+            renderMessage(helpText, 'system-help');
+            setLoading(false);
+            scrollToBottom();
+        }
+
+        async function stopSimulation() {
+            if(state.isProcessing) return;
+            state.simulationActive = false;
+            
+            appendSystemAlert("Fin du combat. L'arbitre délibère...");
+            setLoading(true);
+
+            state.chatHistory.push({
+                role: "user",
+                parts: [{ text: "COMMANDE /STOP : La simulation est terminée. Sors de ton personnage. Génère le 'Rapport d'échange OSBD' final au format Markdown (utilise des **gras**, des listes à puces et des emojis). Le rapport doit contenir : \n1. Résumé de la situation.\n2. Évaluation globale de ma performance OSBD.\n3. 'MÉDAILLES OBTENUES' (invente des succès stylés de jeu vidéo pour mes points forts ou points faibles observés durant l'échange. Ex: '🏆 Bouclier de Zen', '💥 Combo Brisé')." }]
+            });
+
+            const reportText = await callGeminiAPI(state.chatHistory, SYSTEM_PROMPT);
+            
+            setLoading(false);
+            switchView('view-report');
+            
+            // Simple markdown parsing for the report
+            const formattedReport = parseMarkdown(reportText);
+            document.getElementById('report-content').innerHTML = formattedReport;
+        }
+
+        function renderMessage(text, sender) {
+            const container = document.getElementById('chat-messages');
+            const wrapper = document.createElement('div');
+            
+            if (sender === 'user') {
+                wrapper.className = "flex justify-end w-full";
+                wrapper.innerHTML = `
+                    <div class="chat-bubble chat-bubble-user p-4 md:p-5 text-sm md:text-base leading-relaxed">
+                        <div class="font-fredoka text-blue-800 dark:text-blue-200 font-bold mb-1 text-xs uppercase tracking-wide">🛡️ Toi</div>
+                        <div class="font-bold text-slate-800 dark:text-white">${escapeHtml(text)}</div>
+                    </div>
+                `;
+            } else if (sender === 'agent') {
+                wrapper.className = "flex justify-start w-full";
+                
+                // Extract OSBD tag if present
+                let osbdTag = "";
+                let cleanText = text;
+                const osbdMatch = text.match(/\[OSBD\].*?(?=\n|$)/i) || text.match(/^O:.*?S:.*?B:.*?D:.*?(?=\n|$)/i);
+                
+                if (osbdMatch) {
+                    osbdTag = osbdMatch[0];
+                    cleanText = text.replace(osbdTag, '').trim();
+                }
+
+                let htmlContent = parseMarkdown(cleanText);
+                
+                let avatarAnim = state.mood > 7 ? 'animate-shake' : (state.mood > 4 ? 'animate-float' : '');
+                let bgColor = state.mood < 4 ? 'bg-green-500' : (state.mood < 7 ? 'bg-yellow-400' : 'bg-red-500');
+
+                wrapper.innerHTML = `
+                    <div class="flex gap-3 max-w-[95%] md:max-w-[85%]">
+                        <div class="w-16 h-16 md:w-20 md:h-20 rounded-2xl ${bgColor} border-2 md:border-4 border-slate-900 flex items-center justify-center text-4xl md:text-5xl shrink-0 mt-2 shadow-[4px_4px_0px_#0f172a] dark:shadow-[4px_4px_0px_#000] ${avatarAnim}">
+                            ${document.getElementById('emo-' + state.mood).textContent}
+                        </div>
+                        <div class="chat-bubble chat-bubble-agent p-4 md:p-5 text-sm md:text-base">
+                            <div class="font-fredoka text-red-600 dark:text-red-400 font-bold mb-2 text-xs uppercase tracking-wide">⚔️ K.A.R.E.N</div>
+                            ${osbdTag ? `<div class="osbd-badge">${escapeHtml(osbdTag)}</div>` : ''}
+                            <div class="prose prose-sm dark:prose-invert leading-relaxed font-semibold text-slate-700 dark:text-slate-200">${htmlContent}</div>
+                        </div>
+                    </div>
+                `;
+            } else if (sender === 'system-help') {
+                wrapper.className = "flex justify-center w-full my-4";
+                let htmlContent = parseMarkdown(text);
+                wrapper.innerHTML = `
+                    <div class="bg-yellow-100 border-4 border-slate-800 text-slate-800 p-5 rounded-2xl text-sm w-full max-w-2xl shadow-[4px_4px_0px_#0f172a]">
+                        <div class="font-fredoka text-lg flex items-center gap-2 mb-2"><span class="text-2xl animate-bounce">💡</span> JOKER DU FORMATEUR</div>
+                        <div class="prose prose-sm font-bold text-slate-700">${htmlContent}</div>
+                    </div>
+                `;
+            }
+
+            container.appendChild(wrapper);
+        }
+
+        function appendSystemAlert(text) {
+            const container = document.getElementById('chat-messages');
+            const wrapper = document.createElement('div');
+            wrapper.className = "flex justify-center w-full my-3 opacity-90";
+            wrapper.innerHTML = `<span class="bg-slate-800 text-white font-fredoka text-xs px-4 py-2 rounded-xl border-2 border-slate-900 shadow-[2px_2px_0px_#000] tracking-wide">${text}</span>`;
+            container.appendChild(wrapper);
+            scrollToBottom();
+        }
+
+        function setLoading(isLoading) {
+            state.isProcessing = isLoading;
+            const loader = document.getElementById('chat-loading');
+            const input = document.getElementById('chat-input');
+            
+            if (isLoading) {
+                loader.classList.remove('hidden');
+                input.disabled = true;
+                input.placeholder = "Le personnage réfléchit...";
+            } else {
+                loader.classList.add('hidden');
+                input.disabled = false;
+                input.placeholder = "Votre réponse en mode OSBD...";
+                setTimeout(() => input.focus(), 100);
+            }
+            scrollToBottom();
+        }
+
+        function scrollToBottom() {
+            const container = document.getElementById('chat-messages');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function resetApp() {
+            switchView('view-config');
+            document.getElementById('custom-scenario').value = '';
+            document.getElementById('report-content').innerHTML = `
+                <div class="animate-pulse flex flex-col gap-4">
+                    <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+                    <div class="h-4 bg-gray-200 rounded w-full"></div>
+                    <div class="h-4 bg-gray-200 rounded w-5/6"></div>
+                    <div class="h-32 bg-gray-100 rounded-xl mt-6"></div>
+                </div>`;
+        }
+
+        // Basic Markdown to HTML parser
+        function parseMarkdown(text) {
+            let html = escapeHtml(text);
+            // Bold
+            html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            // Italic
+            html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            // Headers
+            html = html.replace(/^### (.*$)/gim, '<h3 class="text-xl font-bold mt-4 mb-2 text-gray-800">$1</h3>');
+            html = html.replace(/^## (.*$)/gim, '<h2 class="text-2xl font-bold mt-6 mb-3 text-gray-800 border-b pb-2">$1</h2>');
+            html = html.replace(/^# (.*$)/gim, '<h1 class="text-3xl font-bold mt-6 mb-4 text-gray-900">$1</h1>');
+            // Line breaks
+            html = html.replace(/\n/g, '<br>');
+            // Quick bullet points catch
+            html = html.replace(/<br>- /g, '<br>• ');
+            html = html.replace(/<br>\* /g, '<br>• ');
+            
+            return html;
+        }
+
+        function escapeHtml(unsafe) {
+            return unsafe
+                 .replace(/&/g, "&amp;")
+                 .replace(/</g, "&lt;")
+                 .replace(/>/g, "&gt;")
+                 .replace(/"/g, "&quot;")
+                 .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
