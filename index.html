@@ -153,7 +153,7 @@
 
         /* Chat bubbles */
         .chat-bubble {
-            max-width: 85%;
+            width: 100%;
             border: 3px solid #0f172a;
             border-radius: 20px;
             position: relative;
@@ -210,6 +210,35 @@
         }
         .animate-shake { animation: shake 0.4s infinite; }
 
+        /* Barre de vie de Boss */
+        .boss-hp-track {
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .boss-hp-fill {
+            background-image: linear-gradient(45deg, rgba(255,255,255,0.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.15) 75%, transparent 75%, transparent);
+            background-size: 1rem 1rem;
+            animation: stripemove 1s linear infinite;
+        }
+        @keyframes stripemove {
+            0% { background-position: 1rem 0; }
+            100% { background-position: 0 0; }
+        }
+
+        /* Didascalies dans le chat */
+        .didascalie {
+            color: #64748b;
+            font-style: italic;
+            font-size: 0.9em;
+            background: rgba(0,0,0,0.05);
+            padding: 2px 6px;
+            border-radius: 6px;
+            display: inline-block;
+        }
+        .dark .didascalie {
+            color: #94a3b8;
+            background: rgba(255,255,255,0.1);
+        }
+
         /* Typist effect for thinking */
         .typing-indicator span {
             display: inline-block;
@@ -226,6 +255,36 @@
             0%, 80%, 100% { transform: scale(0); }
             40% { transform: scale(1); }
         }
+
+        /* Style des cartes de Rapport Game Arcade */
+        .trophy-card {
+            background: linear-gradient(135deg, #fef08a 0%, #fde047 100%);
+            border: 4px solid #0f172a;
+            border-radius: 20px;
+            box-shadow: 6px 6px 0px #0f172a;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .dark .trophy-card {
+            background: linear-gradient(135deg, #854d0e 0%, #a16207 100%);
+            border-color: #fef08a;
+            box-shadow: 6px 6px 0px #000;
+        }
+        .trophy-card:hover {
+            transform: translateY(-4px) rotate(-1deg);
+            box-shadow: 10px 10px 0px #0f172a;
+        }
+
+        .pillar-card {
+            background: #ffffff;
+            border: 3px solid #0f172a;
+            border-radius: 16px;
+            box-shadow: 4px 4px 0px #0f172a;
+        }
+        .dark .pillar-card {
+            background: #1e293b;
+            border-color: #475569;
+            box-shadow: 4px 4px 0px #000;
+        }
     </style>
 </head>
 <body class="h-screen flex flex-col items-center justify-center p-4 sm:p-8">
@@ -239,7 +298,11 @@
             </h3>
             <div class="mb-6">
                 <label class="block text-sm text-slate-600 dark:text-slate-300 font-bold mb-2">Clé API Google Gemini</label>
-                <input type="password" id="api-key-input" placeholder="Laisse vide pour jouer via l'app" class="w-full p-3 border-4 border-slate-800 dark:border-slate-500 rounded-xl focus:ring-0 focus:border-blue-500 outline-none font-bold shadow-[4px_4px_0px_#1e293b] dark:shadow-[4px_4px_0px_#000] dark:bg-slate-800 dark:text-white transition-colors">
+                <div class="flex gap-2">
+                    <input type="password" id="api-key-input" oninput="resetApiKeyStatus()" placeholder="Laisse vide pour jouer via l'app" class="flex-1 w-full p-3 border-4 border-slate-800 dark:border-slate-500 rounded-xl focus:ring-0 focus:border-blue-500 outline-none font-bold shadow-[4px_4px_0px_#1e293b] dark:shadow-[4px_4px_0px_#000] dark:bg-slate-800 dark:text-white transition-colors">
+                    <button onclick="validateApiKey()" class="btn-game bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-4 py-3 shrink-0 text-sm sm:text-base">Vérifier</button>
+                </div>
+                <p id="api-key-status" class="text-sm font-bold mt-2 hidden transition-all"></p>
                 <p class="text-xs text-slate-500 dark:text-slate-400 mt-3 font-bold">
                     Où trouver cette clé ? <br>
                     <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-blue-500 hover:text-blue-600 underline">Obtiens ta clé API gratuite sur Google AI Studio</a>.
@@ -342,8 +405,15 @@
                 <div class="flex items-center gap-2 font-fredoka text-lg">
                     <span id="banner-context-icon" class="text-2xl"></span>
                     <span id="banner-context-text" class="text-yellow-400"></span>
-                    <span class="mx-2 text-slate-500">⚔️</span>
-                    <span>RAGE : <span id="banner-mood-text" class="text-red-400 font-bold text-xl"></span>/10</span>
+                </div>
+                <div class="w-full max-w-md mx-auto flex flex-col gap-1">
+                    <div class="flex justify-between items-center text-xs font-fredoka uppercase tracking-wider">
+                        <span class="text-red-400">Niveau de Rage</span>
+                        <span id="rage-text" class="text-white font-bold">50/100</span>
+                    </div>
+                    <div class="w-full bg-slate-900 h-4 rounded-full border-2 border-black overflow-hidden relative boss-hp-track">
+                        <div id="rage-bar" class="h-full bg-red-500 boss-hp-fill transition-all duration-700 ease-out" style="width: 50%"></div>
+                    </div>
                 </div>
                 <div class="flex gap-2">
                     <button onclick="requestHelp()" class="btn-game btn-warning px-4 py-2 text-sm flex items-center gap-2">
@@ -371,9 +441,9 @@
 
             <!-- Chat Input -->
             <div class="p-4 bg-white dark:bg-slate-800 border-t-4 border-slate-800 dark:border-slate-600 shrink-0 z-10 transition-colors">
-                <form id="chat-form" class="flex gap-3" onsubmit="handleChatSubmit(event)">
-                    <input type="text" id="chat-input" placeholder="Ta parade pacifique (OSBD)..." class="flex-1 p-4 border-4 border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-white rounded-2xl focus:border-blue-500 outline-none font-bold text-slate-700 text-lg transition-colors" autocomplete="off" required>
-                    <button type="submit" class="btn-game btn-primary p-4 rounded-2xl flex items-center justify-center">
+                <form id="chat-form" class="flex gap-3 items-end" onsubmit="handleChatSubmit(event)">
+                    <textarea id="chat-input" rows="2" placeholder="Ta parade pacifique (OSBD)..." class="flex-1 p-4 border-4 border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-white rounded-2xl focus:border-blue-500 outline-none font-bold text-slate-700 text-lg transition-colors resize-none overflow-y-auto" onkeydown="handleEnter(event)" required></textarea>
+                    <button type="submit" class="btn-game btn-primary p-4 rounded-2xl flex items-center justify-center shrink-0 mb-1">
                         <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
                     </button>
                 </form>
@@ -381,27 +451,55 @@
         </main>
 
         <!-- VIEW: REPORT -->
-        <main id="view-report" class="hidden flex-1 overflow-y-auto p-6 bg-slate-800 dark:bg-slate-950 text-white transition-colors">
-            <div class="max-w-3xl mx-auto py-8">
-                <div class="text-center mb-10">
-                    <h2 class="text-6xl font-fredoka text-yellow-400 mb-2 drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)]">NIVEAU TERMINÉ</h2>
-                    <p class="text-slate-300 font-bold text-xl">Voici le bilan de ton affrontement verbal avec K.A.R.E.N.</p>
+        <main id="view-report" class="hidden flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-900 text-white transition-colors relative">
+            <!-- Background floating particles -->
+            <div class="absolute inset-0 opacity-10 pointer-events-none flex flex-wrap justify-around items-center overflow-hidden text-7xl select-none">
+                <span>🏆</span><span>⭐</span><span>🎮</span><span>🥊</span><span>🏅</span><span>✨</span>
+            </div>
+
+            <div class="max-w-4xl mx-auto py-6 relative z-10">
+                <!-- Top Victory / Defeat Header -->
+                <div class="text-center mb-8">
+                    <div id="report-badge-status" class="inline-block px-6 py-2 bg-yellow-400 text-slate-900 font-fredoka text-xl rounded-full border-4 border-black shadow-[4px_4px_0px_#000] mb-4 transform -rotate-2 animate-bounce">
+                        🏆 FIN DE SIMULATION
+                    </div>
+                    <h2 class="text-4xl sm:text-6xl font-fredoka text-yellow-400 mb-2 drop-shadow-[0_5px_0px_#000]">
+                        BILAN D'AFFRONTEMENT
+                    </h2>
+                    <p class="text-slate-300 font-extrabold text-base sm:text-lg">Voici l'analyse détaillée de ton échange avec K.A.R.E.N.</p>
                 </div>
 
-                <div id="report-content" class="game-panel p-8 text-slate-800 dark:text-slate-200 prose prose-lg prose-blue dark:prose-invert max-w-none shadow-[8px_8px_0px_#000000]">
-                    <!-- Report will be injected here -->
-                    <div class="animate-pulse flex flex-col gap-4">
-                        <div class="h-6 bg-slate-200 rounded-lg w-3/4"></div>
-                        <div class="h-4 bg-slate-200 rounded w-full"></div>
-                        <div class="h-4 bg-slate-200 rounded w-5/6"></div>
-                        <div class="h-40 bg-slate-100 border-4 border-slate-200 rounded-2xl mt-6"></div>
+                <!-- Stat Dashboard Banner -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+                    <div class="game-panel p-4 text-center bg-blue-600 border-4 border-black text-white rounded-2xl shadow-[4px_4px_0px_#000]">
+                        <div class="text-xs font-fredoka uppercase tracking-widest opacity-80">Statut Final K.A.R.E.N</div>
+                        <div id="report-stat-rage" class="text-3xl font-fredoka mt-1">50/100</div>
+                    </div>
+                    <div class="game-panel p-4 text-center bg-purple-600 border-4 border-black text-white rounded-2xl shadow-[4px_4px_0px_#000]">
+                        <div class="text-xs font-fredoka uppercase tracking-widest opacity-80">Maitrise OSBD</div>
+                        <div id="report-stat-rank" class="text-3xl font-fredoka mt-1">Rang A</div>
+                    </div>
+                    <div class="game-panel p-4 text-center bg-emerald-600 border-4 border-black text-white rounded-2xl shadow-[4px_4px_0px_#000]">
+                        <div class="text-xs font-fredoka uppercase tracking-widest opacity-80">Tours Échangés</div>
+                        <div id="report-stat-turns" class="text-3xl font-fredoka mt-1">0</div>
                     </div>
                 </div>
 
-                <div class="mt-12 text-center">
-                    <button onclick="resetApp()" class="btn-game btn-primary px-8 py-4 text-2xl flex items-center gap-3 mx-auto">
+                <!-- Report Content Container -->
+                <div id="report-content" class="flex flex-col gap-6">
+                    <!-- Dynamic cards will be generated by JS -->
+                    <div class="game-panel p-8 text-center text-slate-700 dark:text-slate-200">
+                        <div class="typing-indicator flex justify-center items-center h-8">
+                            <span class="dark:bg-white"></span><span class="dark:bg-white"></span><span class="dark:bg-white"></span>
+                        </div>
+                        <p class="font-fredoka mt-4">Calcul des scores et assemblage des médailles...</p>
+                    </div>
+                </div>
+
+                <div class="mt-10 text-center">
+                    <button onclick="resetApp()" class="btn-game btn-primary px-10 py-5 text-2xl flex items-center gap-3 mx-auto shadow-[6px_6px_0px_#000] hover:scale-105 transition-transform">
                         <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                        REJOUER
+                        REJOUER UNE PARTIE
                     </button>
                 </div>
             </div>
@@ -425,6 +523,7 @@
 
         let state = {
             mood: 5,
+            currentRage: 50, // de 0 à 100
             contextId: 3, // Default Colleagues
             customContext: '',
             chatHistory: [],
@@ -437,13 +536,15 @@
 Ton but est d'entraîner l'utilisateur à pratiquer la méthode OSBD (Observation, Sentiment, Besoin, Demande) en simulant un interlocuteur difficile.
 
 RÈGLES DE LA SIMULATION :
-1. Reste TOUJOURS dans le personnage que l'utilisateur a configuré, en respectant son niveau d'humeur. Ne dis jamais que tu es une IA.
-2. IMPORTANT : À chaque réponse de l'utilisateur, tu DOIS analyser brièvement si sa réponse respecte la méthode OSBD sur une seule ligne tout en haut de ton message avec ce format exact :
-[OSBD] O:🟢(ou🔴/🟠) S:🟢 B:🟢 D:🟢
-(🟢=Réussi, 🟠=Moyen, 🔴=Raté/Absent. Mets une courte note entre parenthèses si besoin).
-3. Juste en dessous de cette ligne, saute une ligne et réponds en incarnant le personnage, pour continuer la dispute/discussion. Tes réponses de personnage doivent être concises (1 ou 2 paragraphes max) pour permettre l'échange.
-4. Si l'utilisateur demande /HELP, sors temporairement du personnage pour lui donner la phrase parfaite à dire selon la méthode OSBD.
-5. Si l'utilisateur demande /STOP, arrête le jeu et rédige le "Rapport d'échange OSBD".`;
+1. Reste TOUJOURS dans le personnage que l'utilisateur a configuré, en respectant son niveau d'humeur initial. Ne dis jamais que tu es une IA.
+2. IMPORTANT : À chaque réponse de l'utilisateur, tu DOIS analyser sa réponse selon la méthode OSBD ET ajuster la RAGE du personnage sur une seule ligne tout en haut de ton message avec ce format exact :
+[OSBD] O:🟢 S:🟢 B:🟢 D:🟢 [RAGE: X]
+- Pour OSBD : Utilise 🟢 (Réussi), 🟠 (Moyen), 🔴 (Raté).
+- Pour RAGE : C'est une jauge de 0 à 100. Si l'utilisateur communique bien (OSBD réussi), baisse la rage (ex: -15 ou -20). S'il est agressif ou maladroit, augmente la rage (ex: +15). Indique juste le NOUVEAU total (ex: [RAGE: 40]).
+3. Juste en dessous de cette ligne d'analyse, saute une ligne et réponds en incarnant le personnage. Tes répliques doivent être courtes (1 ou 2 paragraphes) pour que ce soit interactif.
+4. Mets tes didascalies (actions physiques ou intonations) entre astérisques, ex: *croise les bras*.
+5. Si l'utilisateur demande /HELP, sors temporairement du personnage pour lui donner la phrase parfaite à dire selon la méthode OSBD.
+6. Si l'utilisateur demande /STOP, arrête le jeu et rédige le "Rapport d'échange OSBD".`;
 
         // Initialization
         window.onload = () => {
@@ -473,6 +574,42 @@ RÈGLES DE LA SIMULATION :
                 modal.classList.remove('hidden');
             } else {
                 modal.classList.add('hidden');
+            }
+        }
+
+        function resetApiKeyStatus() {
+            document.getElementById('api-key-status').classList.add('hidden');
+        }
+
+        async function validateApiKey() {
+            const apiKey = document.getElementById('api-key-input').value.trim();
+            const statusEl = document.getElementById('api-key-status');
+            
+            statusEl.classList.remove('hidden', 'text-green-500', 'dark:text-green-400', 'text-red-500', 'dark:text-red-400', 'text-slate-500', 'dark:text-slate-400');
+            
+            if (!apiKey) {
+                statusEl.innerHTML = "ℹ️ Clé vide. Le mode par défaut de l'application sera utilisé.";
+                statusEl.classList.add('text-slate-500', 'dark:text-slate-400');
+                return;
+            }
+
+            statusEl.innerHTML = "⏳ Vérification en cours...";
+            statusEl.classList.add('text-slate-500', 'dark:text-slate-400');
+
+            try {
+                // Requête très légère (liste des modèles) pour juste tester l'autorisation de la clé
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+                if (response.ok) {
+                    statusEl.innerHTML = "✅ Clé API valide et fonctionnelle !";
+                    statusEl.classList.add('text-green-500', 'dark:text-green-400');
+                } else {
+                    const err = await response.json();
+                    statusEl.innerHTML = `❌ Erreur : ${err.error?.message || 'Clé invalide'}`;
+                    statusEl.classList.add('text-red-500', 'dark:text-red-400');
+                }
+            } catch (e) {
+                statusEl.innerHTML = "❌ Impossible de contacter les serveurs Google. Vérifiez votre connexion.";
+                statusEl.classList.add('text-red-500', 'dark:text-red-400');
             }
         }
 
@@ -569,20 +706,43 @@ RÈGLES DE LA SIMULATION :
                     body: JSON.stringify(payload)
                 });
                 
-                const result = await response.json();
-                
-                if(result.error) {
-                    throw new Error(result.error.message || "Erreur API Gemini");
+                // Handle non-200 responses before attempting to parse JSON
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    let errorMessage = `HTTP Error ${response.status}: ${response.statusText}`;
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        if (errorJson.error && errorJson.error.message) {
+                            errorMessage += ` - ${errorJson.error.message}`;
+                        }
+                    } catch(e) {
+                         // The error wasn't JSON, just use the HTTP status message
+                         errorMessage += ` - ${errorText.substring(0, 100)}`;
+                    }
+                    throw new Error(errorMessage);
                 }
+                
+                const result = await response.json();
 
                 if (result.candidates && result.candidates.length > 0) {
                     return result.candidates[0].content.parts[0].text;
+                } else if (result.promptFeedback && result.promptFeedback.blockReason) {
+                    throw new Error(`Message bloqué par le filtre de sécurité: ${result.promptFeedback.blockReason}`);
                 } else {
-                    throw new Error("Format de réponse inattendu.");
+                    console.warn("Unexpected API Response Structure:", result);
+                    throw new Error("Format de réponse inattendu de l'API Gemini.");
                 }
             } catch (error) {
                 console.error("API Error:", error);
-                return `[Erreur technique: ${error.message}]. Réessaie ou vérifie ta clé API si tu en as fourni une.`;
+                
+                // Friendly error messages for the user
+                if (error.message.includes("API_KEY_INVALID") || error.message.includes("HTTP Error 400")) {
+                     return `[Erreur: Clé API invalide. Vérifie la clé dans les paramètres (⚙️).]`;
+                } else if (error.message.includes("quota") || error.message.includes("HTTP Error 429")) {
+                     return `[Erreur: Quota API dépassé. Attends un peu ou vérifie ton compte Google AI Studio.]`;
+                }
+                
+                return `[Erreur technique: ${error.message}]. Réessaie ou vérifie tes paramètres.`;
             }
         }
 
@@ -590,10 +750,13 @@ RÈGLES DE LA SIMULATION :
             state.customContext = document.getElementById('custom-scenario').value.trim();
             const ctxObj = CONTEXTS.find(c => c.id == state.contextId);
             
+            // Initialiser la rage (Humeur 1=10%, Humeur 5=50%, Humeur 10=100%)
+            state.currentRage = state.mood * 10;
+            updateRageUI(state.currentRage);
+
             // Setup Banner
             document.getElementById('banner-context-icon').textContent = ctxObj.icon;
             document.getElementById('banner-context-text').textContent = ctxObj.label;
-            document.getElementById('banner-mood-text').textContent = state.mood;
 
             // Clear Chat
             document.getElementById('chat-messages').innerHTML = '';
@@ -605,11 +768,11 @@ RÈGLES DE LA SIMULATION :
 
             const setupPrompt = `INITIALISATION DE LA SIMULATION :
 Contexte choisi : ${ctxObj.label}
-Humeur du personnage (1 à 10) : ${state.mood} (10 = Très hostile)
+Rage de départ du personnage : ${state.currentRage}/100
 Détails personnalisés : ${state.customContext ? state.customContext : "Aucun. Invente une situation crédible."}
 
-Action requise : Plante le décor de la situation en 1 ou 2 phrases descriptives (entre *astérisques*), puis lance IMMÉDIATEMENT la première réplique très directe de ton personnage en fonction de l'humeur.
-NE FAIS PAS d'analyse OSBD pour ce premier message.`;
+Action requise : Plante le décor de la situation en 1 ou 2 phrases descriptives (entre *astérisques*), puis lance IMMÉDIATEMENT la première réplique très directe de ton personnage en fonction de sa rage.
+NE FAIS PAS d'analyse OSBD pour ce premier message, et ne mets PAS de balise [RAGE: X]. Joue juste ton rôle.`;
 
             // Prepare history
             state.chatHistory.push({
@@ -629,6 +792,28 @@ NE FAIS PAS d'analyse OSBD pour ce premier message.`;
             
             // Welcome local message
             appendSystemAlert("Bienvenue dans la simulation ! Ton but : calmer la situation en utilisant O.S.B.D. (Observation, Sentiment, Besoin, Demande).");
+        }
+
+        function updateRageUI(rageValue) {
+            // S'assurer que la rage reste entre 0 et 100
+            state.currentRage = Math.max(0, Math.min(100, parseInt(rageValue) || 0));
+            
+            const rageBar = document.getElementById('rage-bar');
+            const rageText = document.getElementById('rage-text');
+            
+            rageBar.style.width = `${state.currentRage}%`;
+            rageText.textContent = `${state.currentRage}/100`;
+
+            // Changement de couleur en fonction de la rage
+            if (state.currentRage < 30) {
+                rageBar.className = "h-full bg-green-500 boss-hp-fill transition-all duration-700 ease-out";
+                if(state.currentRage === 0) appendSystemAlert("🎉 VICTOIRE ! K.A.R.E.N est totalement apaisée ! Tape /STOP pour ton bilan.");
+            } else if (state.currentRage < 70) {
+                rageBar.className = "h-full bg-yellow-500 boss-hp-fill transition-all duration-700 ease-out";
+            } else {
+                rageBar.className = "h-full bg-red-500 boss-hp-fill transition-all duration-700 ease-out";
+                if(state.currentRage >= 100) appendSystemAlert("⚠️ ALERTE ROUGE ! K.A.R.E.N a explosé ! La communication est rompue. Tape /STOP.");
+            }
         }
 
         async function handleChatSubmit(e) {
@@ -692,6 +877,14 @@ NE FAIS PAS d'analyse OSBD pour ce premier message.`;
             scrollToBottom();
         }
 
+        function handleEnter(e) {
+            // Envoie le message avec Entrée, passe à la ligne avec Shift+Entrée
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleChatSubmit(e);
+            }
+        }
+
         async function stopSimulation() {
             if(state.isProcessing) return;
             state.simulationActive = false;
@@ -699,9 +892,31 @@ NE FAIS PAS d'analyse OSBD pour ce premier message.`;
             appendSystemAlert("Fin du combat. L'arbitre délibère...");
             setLoading(true);
 
+            // Calculate turns count (user messages)
+            const userTurnsCount = state.chatHistory.filter(m => m.role === 'user' && !m.parts[0].text.startsWith('COMMANDE')).length;
+
             state.chatHistory.push({
                 role: "user",
-                parts: [{ text: "COMMANDE /STOP : La simulation est terminée. Sors de ton personnage. Génère le 'Rapport d'échange OSBD' final au format Markdown (utilise des **gras**, des listes à puces et des emojis). Le rapport doit contenir : \n1. Résumé de la situation.\n2. Évaluation globale de ma performance OSBD.\n3. 'MÉDAILLES OBTENUES' (invente des succès stylés de jeu vidéo pour mes points forts ou points faibles observés durant l'échange. Ex: '🏆 Bouclier de Zen', '💥 Combo Brisé')." }]
+                parts: [{ text: `COMMANDE /STOP : La simulation est terminée. Sors de ton personnage et génère le 'Rapport d'échange OSBD' final.
+
+Mise en page attendue (utilise EXACTEMENT ces titres de section avec des #) :
+
+# 📊 BILAN GENERAL
+Résumé synthétique et bienveillant de l'échange.
+
+# 🧩 PILIERS OSBD
+- **Observation** : (Analyse de la capacité à décrire les faits sans jugement)
+- **Sentiment** : (Analyse de l'expression des émotions)
+- **Besoin** : (Analyse de la clarification des besoins profonds)
+- **Demande** : (Analyse de la formulation d'une demande claire et négociable)
+
+# 🏆 MÉDAILLES OBTENUES
+- **[Emoji + Nom de Médaille 1]** : Courte explication du succès ou comportement remarqué.
+- **[Emoji + Nom de Médaille 2]** : Courte explication.
+- **[Emoji + Nom de Médaille 3]** : Courte explication.
+
+# 💡 CONSEILS DU COACH
+Les 2 conseils clés à retenir pour s'améliorer.` }]
             });
 
             const reportText = await callGeminiAPI(state.chatHistory, SYSTEM_PROMPT);
@@ -709,9 +924,139 @@ NE FAIS PAS d'analyse OSBD pour ce premier message.`;
             setLoading(false);
             switchView('view-report');
             
-            // Simple markdown parsing for the report
-            const formattedReport = parseMarkdown(reportText);
-            document.getElementById('report-content').innerHTML = formattedReport;
+            // Update Dashboard Quick Stats
+            document.getElementById('report-stat-rage').textContent = `${state.currentRage}/100`;
+            document.getElementById('report-stat-turns').textContent = userTurnsCount;
+            
+            let rank = 'Rang A';
+            let badgeText = '🏆 COMBAT TERMINÉ';
+            if (state.currentRage <= 20) {
+                rank = 'Rang S 👑';
+                badgeText = '🕊️ VICTOIRE PACIFIQUE TOTALE';
+            } else if (state.currentRage <= 50) {
+                rank = 'Rang A ⭐';
+                badgeText = '🛡️ TENSION DÉSAMORCÉE';
+            } else if (state.currentRage <= 80) {
+                rank = 'Rang B 🥊';
+                badgeText = '⚠️ NÉGOCIATION DIFFICILE';
+            } else {
+                rank = 'Rang C 💥';
+                badgeText = '🔥 RUPTURE DU DIALOGUE';
+            }
+            document.getElementById('report-stat-rank').textContent = rank;
+            document.getElementById('report-badge-status').textContent = badgeText;
+
+            // Render formatted visual cards
+            document.getElementById('report-content').innerHTML = parseReportToCards(reportText);
+        }
+
+        function parseReportToCards(text) {
+            let html = escapeHtml(text);
+
+            // Split into sections based on Markdown headers (# )
+            const sections = html.split(/(?=#\s)/g);
+            let cardsHTML = '';
+
+            sections.forEach(sec => {
+                let trimmed = sec.trim();
+                if (!trimmed) return;
+
+                if (trimmed.includes('BILAN GENERAL')) {
+                    let content = trimmed.replace(/#\s*📊?\s*BILAN GENERAL/gi, '').trim();
+                    content = formatInlineMarkdown(content);
+                    cardsHTML += `
+                        <div class="game-panel p-6 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border-4 border-slate-900 dark:border-slate-500 shadow-[6px_6px_0px_#000]">
+                            <h3 class="text-2xl font-fredoka text-blue-600 dark:text-blue-400 mb-3 flex items-center gap-2">
+                                📊 Bilan Général
+                            </h3>
+                            <div class="text-base sm:text-lg leading-relaxed font-semibold">${content}</div>
+                        </div>
+                    `;
+                } else if (trimmed.includes('PILIERS OSBD')) {
+                    let content = trimmed.replace(/#\s*🧩?\s*PILIERS OSBD/gi, '').trim();
+                    // Split bullet points for O, S, B, D
+                    let bullets = content.split(/\n-\s*/g).filter(b => b.trim().length > 0);
+                    
+                    let pillarsGrid = bullets.map(b => {
+                        let formatted = formatInlineMarkdown(b);
+                        let pillarColor = "border-blue-500 bg-blue-50 dark:bg-slate-800";
+                        if (b.toLowerCase().includes('observation')) pillarColor = "border-cyan-500 bg-cyan-50 dark:bg-slate-800";
+                        else if (b.toLowerCase().includes('sentiment')) pillarColor = "border-pink-500 bg-pink-50 dark:bg-slate-800";
+                        else if (b.toLowerCase().includes('besoin')) pillarColor = "border-amber-500 bg-amber-50 dark:bg-slate-800";
+                        else if (b.toLowerCase().includes('demande')) pillarColor = "border-emerald-500 bg-emerald-50 dark:bg-slate-800";
+
+                        return `
+                            <div class="pillar-card p-5 border-l-8 ${pillarColor} font-semibold text-slate-800 dark:text-slate-200">
+                                <div class="text-base sm:text-lg leading-relaxed">${formatted}</div>
+                            </div>
+                        `;
+                    }).join('');
+
+                    cardsHTML += `
+                        <div class="game-panel p-6 bg-white dark:bg-slate-800 border-4 border-slate-900 dark:border-slate-500 shadow-[6px_6px_0px_#000]">
+                            <h3 class="text-2xl font-fredoka text-purple-600 dark:text-purple-400 mb-4 flex items-center gap-2">
+                                🧩 Évaluation des 4 Piliers O.S.B.D
+                            </h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                ${pillarsGrid}
+                            </div>
+                        </div>
+                    `;
+                } else if (trimmed.includes('MÉDAILLES OBTENUES') || trimmed.includes('MEDAILLES OBTENUES')) {
+                    let content = trimmed.replace(/#\s*🏆?\s*MÉDAILLES OBTENUES/gi, '').replace(/#\s*🏆?\s*MEDAILLES OBTENUES/gi, '').trim();
+                    let medals = content.split(/\n-\s*/g).filter(m => m.trim().length > 0);
+
+                    let medalsHTML = medals.map(m => {
+                        let formatted = formatInlineMarkdown(m);
+                        return `
+                            <div class="trophy-card p-5 text-slate-900 dark:text-amber-100 flex items-start gap-4">
+                                <div class="text-4xl shrink-0 p-2 bg-white/50 dark:bg-black/30 rounded-2xl border-2 border-black/20">🏆</div>
+                                <div class="font-extrabold text-base sm:text-lg leading-snug">${formatted}</div>
+                            </div>
+                        `;
+                    }).join('');
+
+                    cardsHTML += `
+                        <div class="game-panel p-6 bg-amber-400 dark:bg-slate-800 border-4 border-slate-900 dark:border-slate-500 shadow-[6px_6px_0px_#000]">
+                            <h3 class="text-2xl font-fredoka text-slate-900 dark:text-yellow-400 mb-4 flex items-center gap-2">
+                                🏅 Étagère de Trophées & Médailles
+                            </h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                ${medalsHTML}
+                            </div>
+                        </div>
+                    `;
+                } else if (trimmed.includes('CONSEILS DU COACH')) {
+                    let content = trimmed.replace(/#\s*💡?\s*CONSEILS DU COACH/gi, '').trim();
+                    content = formatInlineMarkdown(content);
+                    cardsHTML += `
+                        <div class="game-panel p-6 bg-emerald-100 dark:bg-emerald-950/60 text-slate-800 dark:text-emerald-100 border-4 border-slate-900 dark:border-emerald-500 shadow-[6px_6px_0px_#000]">
+                            <h3 class="text-2xl font-fredoka text-emerald-700 dark:text-emerald-400 mb-3 flex items-center gap-2">
+                                💡 Conseils du Coach CNV
+                            </h3>
+                            <div class="text-base sm:text-lg leading-relaxed font-semibold whitespace-pre-wrap">${content}</div>
+                        </div>
+                    `;
+                } else {
+                    // Fallback for any other custom section
+                    let content = formatInlineMarkdown(trimmed);
+                    cardsHTML += `
+                        <div class="game-panel p-6 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border-4 border-slate-900 dark:border-slate-500 shadow-[6px_6px_0px_#000]">
+                            <div class="text-base leading-relaxed font-semibold whitespace-pre-wrap">${content}</div>
+                        </div>
+                    `;
+                }
+            });
+
+            return cardsHTML || `<div class="game-panel p-6 font-semibold">${parseMarkdown(text)}</div>`;
+        }
+
+        function formatInlineMarkdown(str) {
+            let res = str;
+            res = res.replace(/\*\*(.*?)\*\*/g, '<strong class="font-black text-blue-900 dark:text-yellow-300">$1</strong>');
+            res = res.replace(/\*(.*?)\*/g, '<span class="didascalie">$1</span>');
+            res = res.replace(/\n/g, '<br>');
+            return res;
         }
 
         function renderMessage(text, sender) {
@@ -719,51 +1064,72 @@ NE FAIS PAS d'analyse OSBD pour ce premier message.`;
             const wrapper = document.createElement('div');
             
             if (sender === 'user') {
-                wrapper.className = "flex justify-end w-full";
+                wrapper.className = "flex w-full gap-2 md:gap-4 items-start";
                 wrapper.innerHTML = `
-                    <div class="chat-bubble chat-bubble-user p-4 md:p-5 text-sm md:text-base leading-relaxed">
-                        <div class="font-fredoka text-blue-800 dark:text-blue-200 font-bold mb-1 text-xs uppercase tracking-wide">🛡️ Toi</div>
-                        <div class="font-bold text-slate-800 dark:text-white">${escapeHtml(text)}</div>
+                    <div class="w-14 md:w-20 shrink-0"></div>
+                    <div class="chat-bubble chat-bubble-user p-4 md:p-5 text-sm md:text-base leading-relaxed flex-1 min-w-0">
+                        <div class="font-fredoka text-blue-800 dark:text-blue-200 font-bold mb-1 text-xs uppercase tracking-wide text-right">🛡️ Toi</div>
+                        <div class="font-bold text-slate-800 dark:text-white whitespace-pre-wrap">${escapeHtml(text)}</div>
+                    </div>
+                    <div class="w-14 h-14 md:w-20 md:h-20 bg-blue-500 rounded-2xl border-2 md:border-4 border-slate-900 flex items-center justify-center text-3xl md:text-5xl shrink-0 shadow-[4px_4px_0px_#0f172a] dark:shadow-[4px_4px_0px_#000] text-white transition-all">
+                        👤
                     </div>
                 `;
             } else if (sender === 'agent') {
-                wrapper.className = "flex justify-start w-full";
+                wrapper.className = "flex w-full gap-2 md:gap-4 items-start";
                 
-                // Extract OSBD tag if present
+                // Extract OSBD tag and RAGE tag if present
                 let osbdTag = "";
                 let cleanText = text;
-                const osbdMatch = text.match(/\[OSBD\].*?(?=\n|$)/i) || text.match(/^O:.*?S:.*?B:.*?D:.*?(?=\n|$)/i);
                 
+                // Check for [RAGE: X] tag
+                const rageMatch = text.match(/\[RAGE:\s*(\d+)\]/i);
+                if (rageMatch) {
+                    updateRageUI(rageMatch[1]);
+                    cleanText = cleanText.replace(rageMatch[0], ''); // Remove from text
+                }
+
+                // Check for OSBD tag
+                const osbdMatch = cleanText.match(/\[OSBD\].*?(?=\n|$)/i) || cleanText.match(/^O:.*?S:.*?B:.*?D:.*?(?=\n|$)/i);
                 if (osbdMatch) {
                     osbdTag = osbdMatch[0];
-                    cleanText = text.replace(osbdTag, '').trim();
+                    cleanText = cleanText.replace(osbdTag, '').trim();
                 }
 
                 let htmlContent = parseMarkdown(cleanText);
                 
-                let avatarAnim = state.mood > 7 ? 'animate-shake' : (state.mood > 4 ? 'animate-float' : '');
-                let bgColor = state.mood < 4 ? 'bg-green-500' : (state.mood < 7 ? 'bg-yellow-400' : 'bg-red-500');
+                let avatarAnim = state.currentRage > 70 ? 'animate-shake' : (state.currentRage > 40 ? 'animate-float' : '');
+                let bgColor = state.currentRage < 30 ? 'bg-green-500' : (state.currentRage < 70 ? 'bg-yellow-400' : 'bg-red-500');
+                
+                // Mettre à jour l'émoji du boss en fonction de la rage actuelle
+                let bossEmoji = "😬"; // Défaut
+                if (state.currentRage >= 90) bossEmoji = "🤬";
+                else if (state.currentRage >= 70) bossEmoji = "😡";
+                else if (state.currentRage >= 50) bossEmoji = "😤";
+                else if (state.currentRage >= 30) bossEmoji = "😐";
+                else bossEmoji = "🥰";
 
                 wrapper.innerHTML = `
-                    <div class="flex gap-3 max-w-[95%] md:max-w-[85%]">
-                        <div class="w-16 h-16 md:w-20 md:h-20 rounded-2xl ${bgColor} border-2 md:border-4 border-slate-900 flex items-center justify-center text-4xl md:text-5xl shrink-0 mt-2 shadow-[4px_4px_0px_#0f172a] dark:shadow-[4px_4px_0px_#000] ${avatarAnim}">
-                            ${document.getElementById('emo-' + state.mood).textContent}
-                        </div>
-                        <div class="chat-bubble chat-bubble-agent p-4 md:p-5 text-sm md:text-base">
-                            <div class="font-fredoka text-red-600 dark:text-red-400 font-bold mb-2 text-xs uppercase tracking-wide">⚔️ K.A.R.E.N</div>
-                            ${osbdTag ? `<div class="osbd-badge">${escapeHtml(osbdTag)}</div>` : ''}
-                            <div class="prose prose-sm dark:prose-invert leading-relaxed font-semibold text-slate-700 dark:text-slate-200">${htmlContent}</div>
-                        </div>
+                    <div class="w-14 h-14 md:w-20 md:h-20 rounded-2xl ${bgColor} border-2 md:border-4 border-slate-900 flex items-center justify-center text-3xl md:text-5xl shrink-0 shadow-[4px_4px_0px_#0f172a] dark:shadow-[4px_4px_0px_#000] ${avatarAnim} transition-colors">
+                        ${bossEmoji}
                     </div>
+                    <div class="chat-bubble chat-bubble-agent p-4 md:p-5 text-sm md:text-base flex-1 min-w-0">
+                        <div class="font-fredoka text-red-600 dark:text-red-400 font-bold mb-2 text-xs uppercase tracking-wide">⚔️ K.A.R.E.N</div>
+                        ${osbdTag ? `<div class="osbd-badge">${escapeHtml(osbdTag)}</div>` : ''}
+                        <div class="prose prose-sm dark:prose-invert leading-relaxed font-semibold text-slate-700 dark:text-slate-200 text-left whitespace-pre-wrap">${htmlContent}</div>
+                    </div>
+                    <div class="w-14 md:w-20 shrink-0"></div>
                 `;
             } else if (sender === 'system-help') {
-                wrapper.className = "flex justify-center w-full my-4";
+                wrapper.className = "flex w-full gap-2 md:gap-4 my-4 items-start";
                 let htmlContent = parseMarkdown(text);
                 wrapper.innerHTML = `
-                    <div class="bg-yellow-100 border-4 border-slate-800 text-slate-800 p-5 rounded-2xl text-sm w-full max-w-2xl shadow-[4px_4px_0px_#0f172a]">
+                    <div class="w-14 md:w-20 shrink-0"></div>
+                    <div class="bg-yellow-100 border-4 border-slate-800 text-slate-800 p-5 rounded-2xl text-sm flex-1 min-w-0 shadow-[4px_4px_0px_#0f172a]">
                         <div class="font-fredoka text-lg flex items-center gap-2 mb-2"><span class="text-2xl animate-bounce">💡</span> JOKER DU FORMATEUR</div>
                         <div class="prose prose-sm font-bold text-slate-700">${htmlContent}</div>
                     </div>
+                    <div class="w-14 md:w-20 shrink-0"></div>
                 `;
             }
 
@@ -773,8 +1139,14 @@ NE FAIS PAS d'analyse OSBD pour ce premier message.`;
         function appendSystemAlert(text) {
             const container = document.getElementById('chat-messages');
             const wrapper = document.createElement('div');
-            wrapper.className = "flex justify-center w-full my-3 opacity-90";
-            wrapper.innerHTML = `<span class="bg-slate-800 text-white font-fredoka text-xs px-4 py-2 rounded-xl border-2 border-slate-900 shadow-[2px_2px_0px_#000] tracking-wide">${text}</span>`;
+            wrapper.className = "flex w-full gap-2 md:gap-4 my-3 items-center opacity-90";
+            wrapper.innerHTML = `
+                <div class="w-14 md:w-20 shrink-0"></div>
+                <div class="flex-1 flex justify-center min-w-0">
+                    <span class="bg-slate-800 text-white font-fredoka text-xs px-4 py-2 rounded-xl border-2 border-slate-900 shadow-[2px_2px_0px_#000] tracking-wide text-center inline-block">${text}</span>
+                </div>
+                <div class="w-14 md:w-20 shrink-0"></div>
+            `;
             container.appendChild(wrapper);
             scrollToBottom();
         }
@@ -817,10 +1189,12 @@ NE FAIS PAS d'analyse OSBD pour ce premier message.`;
         // Basic Markdown to HTML parser
         function parseMarkdown(text) {
             let html = escapeHtml(text);
+            
             // Bold
             html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-            // Italic
-            html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            // Didascalies (Italics handled as special styling)
+            html = html.replace(/\*(.*?)\*/g, '<span class="didascalie">*$1*</span>');
+            
             // Headers
             html = html.replace(/^### (.*$)/gim, '<h3 class="text-xl font-bold mt-4 mb-2 text-gray-800">$1</h3>');
             html = html.replace(/^## (.*$)/gim, '<h2 class="text-2xl font-bold mt-6 mb-3 text-gray-800 border-b pb-2">$1</h2>');
